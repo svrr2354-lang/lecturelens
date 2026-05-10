@@ -4,3 +4,4 @@ anthropic
 python-dotenv
 youtube-transcript-api
 chromadb
+yt-dlp

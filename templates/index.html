@@ -921,7 +921,7 @@
     </div>
 
     <h1 class="hero-title" id="heroTitle">Every lecture,<br><span>fully unlocked.</span></h1>
-    <p class="hero-sub" id="heroSub">Paste any YouTube lecture URL. Get a complete study environment — outline, summaries, flashcards, and semantic search — in seconds.</p>
+    <p class="hero-sub" id="heroSub">Stop rewatching. Paste a YouTube lecture URL and get everything you need to master it — outline, summaries, flashcards, and semantic search.</p>
 
     <div class="input-wrap">
         <div id="url-error" style="display:none; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 13px; padding: 10px 16px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
@@ -1321,7 +1321,7 @@
       facultyBtn.style.color = 'var(--text-muted)';
       facultyBtn.style.borderColor = 'var(--border-bright)';
       heroTitle.innerHTML = 'Every lecture,<br><span>fully unlocked.</span>';
-      heroSub.textContent = 'Paste any YouTube lecture URL. Get a complete study environment — outline, summaries, flashcards, and semantic search — in seconds.';
+      heroSub.textContent = 'Stop rewatching. Paste a YouTube lecture URL and get everything you need to master it — outline, summaries, flashcards, and semantic search.';
       submitBtn.textContent = 'Analyze Lecture →';
       if (langRow) langRow.style.display = 'flex';
       document.getElementById('featurePills').innerHTML = `
@@ -1942,8 +1942,26 @@
   function jumpToTime(seconds) {
     const iframe = document.querySelector('#videoEmbed iframe');
     if (!iframe) return;
+    
+    const isFirstPlay = !iframe.src.includes('autoplay');
     iframe.src = `https://www.youtube.com/embed/${currentVideoId}?start=${Math.floor(seconds)}&autoplay=1`;
     document.getElementById('videoEmbed').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    if (isFirstPlay) {
+      // Show hint for first time
+      const hint = document.createElement('div');
+      hint.textContent = '▶ Click the video to start playing from this timestamp';
+      hint.style.cssText = 'text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 8px; opacity: 1; transition: opacity 1s ease;';
+      hint.id = 'timestamp-hint';
+      
+      const existing = document.getElementById('timestamp-hint');
+      if (existing) existing.remove();
+      
+      document.getElementById('videoEmbed').insertAdjacentElement('afterend', hint);
+      
+      setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+      setTimeout(() => { hint.remove(); }, 4000);
+    }
   }
 
   function tsToSeconds(ts) {

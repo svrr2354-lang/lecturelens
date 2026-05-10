@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LectureLens — Unlock Every Lecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b10;
+    --bg2: #0d1117;
+    --bg3: #131920;
+    --border: rgba(255,255,255,0.07);
+    --border-bright: rgba(255,255,255,0.15);
+    --accent: #4f8eff;
+    --accent2: #7c3aed;
+    --accent-glow: rgba(79,142,255,0.18);
+    --text: #f0f4ff;
+    --text-muted: #6b7a99;
+    --text-dim: #3a4560;
+    --success: #22d3a5;
+    --warning: #f59e0b;
+    --card: #0f1520;
+    --card-hover: #141c2e;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── GLOW ORBS ── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+  }
+  .orb-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; right: -100px; }
+  .orb-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; left: -100px; }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; flex: 1; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 28px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(79,142,255,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(79,142,255,0.2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(42px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.2s forwards;
+  }
+
+  .hero-title span {
+    background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto 48px;
+    font-weight: 300;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.3s forwards;
+  }
+
+  /* ── URL INPUT ── */
+  .input-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.4s forwards;
+  }
+
+  .input-box {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 6px 6px 6px 18px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .input-icon { color: var(--text-muted); margin-right: 10px; flex-shrink: 0; font-size: 18px; }
+
+  .url-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 8px 0;
+    min-width: 0;
+  }
+
+  .url-input::placeholder { color: var(--text-dim); }
+
+  .submit-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s, transform 0.15s;
+    letter-spacing: 0.3px;
+  }
+
+  .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── FEATURES ROW ── */
+  .features {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.5s forwards;
+  }
+
+  .feature-pill {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .feature-pill .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--success);
+  }
+
+  /* ── LOADING STATE ── */
+  #loading {
+    display: none;
+    padding: 60px 0;
+    text-align: center;
+  }
+
+  .loading-inner {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .loading-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .loading-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+
+  .agent-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .agent-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.3s, background 0.3s;
+  }
+
+  .agent-step.active {
+    border-color: var(--accent);
+    background: rgba(79,142,255,0.05);
+  }
+
+  .agent-step.done {
+    border-color: rgba(34,211,165,0.3);
+    background: rgba(34,211,165,0.04);
+  }
+
+  .step-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    background: var(--bg3);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .agent-step.active .step-icon { background: rgba(79,142,255,0.15); }
+  .agent-step.done .step-icon { background: rgba(34,211,165,0.1); }
+
+  .step-info { flex: 1; }
+  .step-name { font-weight: 500; font-size: 14px; }
+  .step-desc { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+  .step-status {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+
+  .agent-step.active .step-status { color: var(--accent); }
+  .agent-step.done .step-status { color: var(--success); }
+
+  .progress-bar-wrap {
+    margin-top: 32px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 1.5s ease;
+  }
+
+  /* ── ERROR STATE ── */
+  #error-state {
+    display: none;
+    padding: 40px 0;
+    text-align: center;
+  }
+
+  .error-box {
+    max-width: 480px;
+    margin: 0 auto;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .error-icon { font-size: 32px; margin-bottom: 12px; }
+  .error-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; margin-bottom: 8px; color: #f87171; }
+  .error-msg { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+  .retry-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+
+  .retry-btn:hover { background: var(--card-hover); }
+
+  /* ── RESULTS ── */
+  #results { display: none; padding: 48px 0 80px; }
+
+  .results-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .results-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .results-meta span { color: var(--accent); }
+
+  /* TRANSLATE ROW */
+  .translate-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .translate-label {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .lang-select {
+    background: var(--bg3);
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .translate-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s, border-color 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .translate-btn:hover { background: var(--card-hover); border-color: var(--accent); }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 40px;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .section.visible { opacity: 1; transform: none; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .section-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-left: auto;
+  }
+
+  /* ── SUMMARY TABS ── */
+  .summary-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .summary-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .summary-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .summary-content {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    font-size: 15px;
+    line-height: 1.75;
+    color: #c8d4f0;
+  }
+
+  .summary-content.active { display: block; }
+
+  /* ── OUTLINE ── */
+  .outline-content {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .outline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .outline-item:last-child { border-bottom: none; }
+  .outline-item:hover { background: var(--card-hover); }
+
+  .outline-ts {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(79,142,255,0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.3px;
+  }
+
+  .outline-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .outline-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* ── FLASHCARDS ── */
+  .flashcards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .flashcard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .flashcard:hover {
+    border-color: var(--border-bright);
+    background: var(--card-hover);
+    transform: translateY(-2px);
+  }
+
+  .flashcard.flipped .card-front { display: none; }
+  .flashcard.flipped .card-back { display: flex; }
+  .flashcard:not(.flipped) .card-back { display: none; }
+
+  .card-front, .card-back {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .card-front .card-label { color: var(--accent); }
+  .card-back .card-label { color: var(--success); }
+
+  .card-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .card-ts {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .card-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── SEARCH ── */
+  .search-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 6px 6px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 0;
+  }
+
+  .search-input::placeholder { color: var(--text-dim); }
+
+  .search-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .search-btn:hover { opacity: 0.85; }
+  .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .search-result {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .search-result.visible { display: block; }
+
+  .search-answer {
+    padding: 20px 22px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: #c8d4f0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .search-timestamps {
+    padding: 12px 22px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .ts-label { font-size: 12px; color: var(--text-muted); }
+
+  .ts-chip {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(79,142,255,0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+    border: 1px solid rgba(79,142,255,0.2);
+  }
+
+  .ts-chip:hover { background: rgba(79,142,255,0.2); }
+
+  .searching-indicator {
+    display: none;
+    padding: 20px 22px;
+    color: var(--text-muted);
+    font-size: 14px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .searching-indicator.visible { display: flex; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  .pulsing { animation: pulse 1.5s ease infinite; }
+
+  /* ── VIDEO EMBED ── */
+  .video-section {
+    margin-bottom: 40px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--card);
+    aspect-ratio: 16/9;
+    position: relative;
+  }
+
+  .video-section iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 12px;
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .hero { padding: 48px 0 40px; }
+    .flashcards-grid { grid-template-columns: 1fr; }
+    .results-header { flex-direction: column; }
+  }
+  
+  /* ── FACULTY REPORT ── */
+  .faculty-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .faculty-card:hover { border-color: var(--border-bright); }
+
+  .faculty-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .faculty-card-icon { font-size: 18px; }
+
+  .faculty-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .faculty-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+    background: rgba(79,142,255,0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .faculty-section { margin-bottom: 12px; }
+
+  .faculty-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .faculty-label.success { color: var(--success); }
+  .faculty-label.warning { color: var(--warning); }
+  .faculty-label.accent { color: var(--accent); }
+
+  .faculty-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <a class="logo" href="#">
+      <div class="logo-icon">🔭</div>
+      LectureLens
+    </a>
+    <div class="badge">Multi-Agent AI</div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-eyebrow">Powered by 4 AI Agents</div>
+
+    <!-- MODE TOGGLE -->
+    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 32px; opacity: 0; animation: fadeUp 0.6s ease 0.1s forwards;">
+      <button id="studentModeBtn" onclick="setMode('student')" style="padding: 10px 24px; border-radius: 20px; border: 1px solid var(--accent); background: var(--accent); color: white; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">🎓 Student</button>
+      <button id="facultyModeBtn" onclick="setMode('faculty')" style="padding: 10px 24px; border-radius: 20px; border: 1px solid var(--border-bright); background: transparent; color: var(--text-muted); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">👩‍🏫 Faculty</button>
+    </div>
+
+    <h1 class="hero-title" id="heroTitle">Every lecture,<br><span>fully unlocked.</span></h1>
+    <p class="hero-sub" id="heroSub">Paste any YouTube lecture URL. Get a complete study environment — outline, summaries, flashcards, and semantic search — in seconds.</p>
+
+    <div class="input-wrap">
+        <div id="url-error" style="display:none; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 13px; padding: 10px 16px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+          ⚠️ Please paste a YouTube URL first.
+        </div>
+        <div class="input-box">
+            <span class="input-icon">▶</span>
+            <input type="text" class="url-input" id="urlInput"
+              placeholder="https://youtube.com/watch?v=..."
+              autocomplete="off" spellcheck="false" />
+              <button class="submit-btn" id="submitBtn" onclick="handleSubmit()">
+                Analyze Lecture →
+              </button>
+          </div>
+          <div id="langRow" style="display: flex; align-items: center; gap: 10px; margin-top: 10px; justify-content: center;">
+            <span style="font-size: 13px; color: var(--text-muted);">Generate in:</span>          
+            <select id="heroLangSelect" style="background: var(--bg3); border: 1px solid var(--border-bright); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer; outline: none;">
+              <option value="English">English</option>
+              <option value="Spanish">Spanish</option>
+              <option value="French">French</option>
+              <option value="German">German</option>
+              <option value="Chinese">Chinese</option>
+              <option value="Japanese">Japanese</option>
+              <option value="Arabic">Arabic</option>
+              <option value="Hindi">Hindi</option>
+              <option value="Portuguese">Portuguese</option>
+              <option value="Korean">Korean</option>
+              <option value="Italian">Italian</option>
+            </select>
+            <div style="position: relative; display: inline-block;">
+                <span id="infoBtn" style="width: 16px; height: 16px; border-radius: 50%; background: var(--border-bright); color: var(--text-muted); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; user-select: none;" onmouseenter="document.getElementById('infoTooltip').style.display='block'" onmouseleave="document.getElementById('infoTooltip').style.display='none'">i</span>
+                <div id="infoTooltip" style="display: none; position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--border-bright); color: var(--text-muted); font-size: 12px; padding: 8px 12px; border-radius: 8px; white-space: nowrap; z-index: 100; width: 220px; white-space: normal; text-align: center; line-height: 1.5;">
+                  Study materials will be generated directly in your selected language.
+                </div>
+              </div>
+          </div>
+    </div>
+
+    <div class="features" id="featurePills">
+      <div class="feature-pill"><span class="dot"></span> Timestamped Outline</div>
+      <div class="feature-pill"><span class="dot"></span> Smart Summaries</div>
+      <div class="feature-pill"><span class="dot"></span> Flashcards</div>
+      <div class="feature-pill"><span class="dot"></span> Semantic Search</div>
+      <div class="feature-pill"><span class="dot"></span> 10 Languages</div>
+    </div>
+  </section>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="loading-inner">
+      <div class="loading-title">Analyzing your lecture…</div>
+      <div class="loading-sub">4 agents are working in parallel</div>
+
+      <div class="agent-steps">
+        <div class="agent-step" id="step-1">
+          <div class="step-icon">📡</div>
+          <div class="step-info">
+            <div class="step-name">Librarian Agent</div>
+            <div class="step-desc">Fetching transcript & timestamps</div>
+          </div>
+          <div class="step-status">Waiting</div>
+        </div>
+        <div class="agent-step" id="step-2">
+          <div class="step-icon">🎓</div>
+          <div class="step-info">
+            <div class="step-name">Tutor Agent</div>
+            <div class="step-desc">Generating outline, summaries & flashcards</div>
+          </div>
+          <div class="step-status">Waiting</div>
+        </div>
+        <div class="agent-step" id="step-3">
+          <div class="step-icon">🔍</div>
+          <div class="step-info">
+            <div class="step-name">Search Agent</div>
+            <div class="step-desc">Indexing lecture for semantic search</div>
+          </div>
+          <div class="step-status">Waiting</div>
+        </div>
+        <div class="agent-step" id="step-4">
+          <div class="step-icon">🌐</div>
+          <div class="step-info">
+            <div class="step-name">Translator Agent</div>
+            <div class="step-desc">Ready for bilingual support</div>
+          </div>
+          <div class="step-status">On standby</div>
+        </div>
+        <div class="agent-step" id="step-faculty" style="display:none;">
+          <div class="step-icon">🔬</div>
+          <div class="step-info">
+            <div class="step-name">Faculty Auditor Agent</div>
+            <div class="step-desc">Auditing across 4 pedagogical dimensions</div>
+          </div>
+          <div class="step-status">Waiting</div>
+        </div>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-state">
+    <div class="error-box">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">Couldn't process this video</div>
+      <div class="error-msg" id="errorMsg">This video may be private, a livestream, or have no captions available.</div>
+      <button class="retry-btn" onclick="resetToHome()">← Try another URL</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="results-header">
+      <div>
+        <div class="results-title">Study Environment Ready</div>
+        <div class="results-meta">
+          <span id="chunkCount">—</span> transcript segments indexed •
+          <a href="#" onclick="resetToHome(); return false;" style="color: var(--accent); text-decoration: none; font-weight: 500; background: rgba(79,142,255,0.08); border: 1px solid rgba(79,142,255,0.2); padding: 4px 12px; border-radius: 6px; font-size: 13px;" onmouseover="this.style.background='rgba(79,142,255,0.15)'" onmouseout="this.style.background='rgba(79,142,255,0.08)'">← Analyze another</a>
+        </div>
+        <div id="analyzedUrl" style="font-size: 12px; color: var(--text-muted); margin-top: 6px; word-break: break-all;"></div>
+      </div>
+      <div class="translate-row">
+        <span class="translate-label">🌐 Translate to:</span>
+        <select class="lang-select" id="langSelect">
+          <option value="">Select language</option>
+          <option>Spanish</option>
+          <option>French</option>
+          <option>German</option>
+          <option>Chinese</option>
+          <option>Japanese</option>
+          <option>Arabic</option>
+          <option>Hindi</option>
+          <option>Portuguese</option>
+          <option>Korean</option>
+          <option>Italian</option>
+        </select>
+        <button class="translate-btn" onclick="translateContent()" id="translateBtn">
+          <span>Translate</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- VIDEO EMBED -->
+    <div class="video-section" id="videoEmbed"></div>
+
+    <!-- OUTLINE -->
+    <div class="section" id="section-outline">
+      <div class="section-header">
+        <div class="section-icon" style="background: rgba(79,142,255,0.1);">📋</div>
+        <div class="section-title">Lecture Outline</div>
+        <div class="section-badge" style="background: rgba(79,142,255,0.1); color: var(--accent);">Timestamped</div>
+      </div>
+      <div class="outline-content" id="outlineContent"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SUMMARIES -->
+    <div class="section" id="section-summary">
+      <div class="section-header">
+        <div class="section-icon" style="background: rgba(124,58,237,0.1);">⚡</div>
+        <div class="section-title">Smart Summaries</div>
+      </div>
+      <div class="summary-tabs">
+        <button class="summary-tab active" onclick="showSummary('90')">90 Seconds</button>
+        <button class="summary-tab" onclick="showSummary('5min')">5 Minutes</button>
+      </div>
+      <div class="summary-content active" id="summary-90"></div>
+      <div class="summary-content" id="summary-5min"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FLASHCARDS -->
+    <div class="section" id="section-flashcards">
+      <div class="section-header">
+        <div class="section-icon" style="background: rgba(34,211,165,0.1);">🃏</div>
+        <div class="section-title">Flashcards</div>
+        <div class="section-badge" style="background: rgba(34,211,165,0.1); color: var(--success);">Click to flip</div>
+      </div>
+      <div class="flashcards-grid" id="flashcardsGrid"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SEARCH -->
+    <div class="section" id="section-search">
+      <div class="section-header">
+        <div class="section-icon" style="background: rgba(245,158,11,0.1);">🔎</div>
+        <div class="section-title">Ask the Lecture</div>
+        <div class="section-badge" style="background: rgba(245,158,11,0.1); color: var(--warning);">Semantic Search</div>
+      </div>
+      <div class="search-box">
+        <span style="color: var(--text-muted); font-size: 16px;">?</span>
+        <input type="text" class="search-input" id="searchInput"
+          placeholder="What did the lecturer say about…"
+          onkeydown="if(event.key==='Enter') searchLecture()" />
+        <button class="search-btn" onclick="searchLecture()" id="searchBtn">Ask →</button>
+      </div>
+      <div class="searching-indicator" id="searchingIndicator">
+        <div class="spinner"></div>
+        <span>Searching through lecture…</span>
+      </div>
+      <div class="search-result" id="searchResult">
+        <div class="search-answer" id="searchAnswer"></div>
+        <div class="search-timestamps" id="searchTimestamps"></div>
+      </div>
+    </div>
+
+    <div id="studentBottomBtn" style="text-align: center; padding: 40px 0 20px;">
+      <a href="#" onclick="resetToHome(); return false;" style="display: inline-flex; align-items: center; gap: 8px; color: var(--accent); text-decoration: none; font-weight: 600; background: rgba(79,142,255,0.08); border: 1px solid rgba(79,142,255,0.2); padding: 12px 24px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'Syne', sans-serif; transition: background 0.2s;" onmouseover="this.style.background='rgba(79,142,255,0.15)'" onmouseout="this.style.background='rgba(79,142,255,0.08)'">← Analyze another</a>
+    </div>
+
+    <!-- FACULTY REPORT -->
+    <div id="faculty-report" style="display:none;">
+
+      <!-- Top Priority Banner -->
+      <div id="facultyPriority" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 32px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #f87171; margin-bottom: 8px;">🎯 TOP PRIORITY — Fix This First</div>
+        <div id="priorityText" style="font-size: 15px; color: var(--text); line-height: 1.6;"></div>
+      </div>
+
+      <!-- Overall Score -->
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 32px;">
+        <div id="overallScore" style="width: 64px; height: 64px; border-radius: 12px; background: rgba(79,142,255,0.15); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--accent);"></div>
+        <div>
+          <div style="font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;">Overall Lecture Grade</div>
+          <div id="overallText" style="font-size: 13px; color: var(--text); margin-top: 4px; line-height: 1.6;"></div>
+        </div>
+      </div>
+
+      <!-- 4 Dimension Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px; margin-bottom: 32px;">
+
+        <!-- Pedagogical -->
+        <div class="faculty-card" id="card-pedagogical">
+          <div class="faculty-card-header">
+            <span class="faculty-card-icon">📚</span>
+            <span class="faculty-card-title">Pedagogical Quality</span>
+            <span class="faculty-score" id="score-pedagogical"></span>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label success">✓ Strengths</div>
+            <div id="strengths-pedagogical" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label warning">⚠ Issues</div>
+            <div id="issues-pedagogical" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label accent">→ Suggestion</div>
+            <div id="suggestion-pedagogical" class="faculty-text"></div>
+          </div>
+        </div>
+
+        <!-- Accessibility -->
+        <div class="faculty-card" id="card-accessibility">
+          <div class="faculty-card-header">
+            <span class="faculty-card-icon">♿</span>
+            <span class="faculty-card-title">Accessibility</span>
+            <span class="faculty-score" id="score-accessibility"></span>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label success">✓ Strengths</div>
+            <div id="strengths-accessibility" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label warning">⚠ Issues</div>
+            <div id="issues-accessibility" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label accent">→ Suggestion</div>
+            <div id="suggestion-accessibility" class="faculty-text"></div>
+          </div>
+        </div>
+
+        <!-- Equity -->
+        <div class="faculty-card" id="card-equity">
+          <div class="faculty-card-header">
+            <span class="faculty-card-icon">⚖️</span>
+            <span class="faculty-card-title">Equity & Inclusion</span>
+            <span class="faculty-score" id="score-equity"></span>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label success">✓ Strengths</div>
+            <div id="strengths-equity" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label warning">⚠ Issues</div>
+            <div id="issues-equity" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label accent">→ Suggestion</div>
+            <div id="suggestion-equity" class="faculty-text"></div>
+          </div>
+        </div>
+
+        <!-- Clarity -->
+        <div class="faculty-card" id="card-clarity">
+          <div class="faculty-card-header">
+            <span class="faculty-card-icon">💡</span>
+            <span class="faculty-card-title">Clarity</span>
+            <span class="faculty-score" id="score-clarity"></span>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label success">✓ Strengths</div>
+            <div id="strengths-clarity" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label warning">⚠ Issues</div>
+            <div id="issues-clarity" class="faculty-text"></div>
+          </div>
+          <div class="faculty-section">
+            <div class="faculty-label accent">→ Suggestion</div>
+            <div id="suggestion-clarity" class="faculty-text"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rewrite Examples -->
+      <div class="section visible">
+        <div class="section-header">
+          <div class="section-icon" style="background: rgba(124,58,237,0.1);">✏️</div>
+          <div class="section-title">Suggested Rewrites</div>
+          <div class="section-badge" style="background: rgba(124,58,237,0.1); color: var(--accent2);">Timestamped</div>
+        </div>
+        <div id="rewriteExamples" style="background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; font-size: 14px; line-height: 1.75; color: #c8d4f0;"></div>
+      </div>
+
+      <!-- Download Button -->
+      <div style="text-align: center; padding: 20px 0;">
+        <button onclick="downloadReport()" style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border-bright); color: var(--text); padding: 12px 24px; border-radius: var(--radius-sm); cursor: pointer; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='var(--card-hover)'" onmouseout="this.style.background='var(--bg3)'">
+          📄 Download Report as PDF
+        </button>
+      </div>
+
+      <!-- Bottom Audit Another Button -->
+      <div style="text-align: center; padding: 20px 0;">
+        <a href="#" id="facultyBottomBtn" onclick="resetToHome(); return false;" style="display: inline-flex; align-items: center; gap: 8px; color: var(--accent); text-decoration: none; font-weight: 600; background: rgba(79,142,255,0.08); border: 1px solid rgba(79,142,255,0.2); padding: 12px 24px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'Syne', sans-serif; transition: background 0.2s;" onmouseover="this.style.background='rgba(79,142,255,0.15)'" onmouseout="this.style.background='rgba(79,142,255,0.08)'">← Audit another</a>
+      </div>
+
+      <!-- Privacy Notice -->
+      <div style="text-align: center; padding: 24px 0; color: var(--text-dim); font-size: 12px;">
+        🔒 This report is private and only visible to you. Nothing is stored on our servers.
+      </div>
+
+    </div><!-- /faculty-report -->
+
+  </div><!-- /results -->
+
+</div><!-- /container -->
+
+<footer>
+  <div class="container">
+    LectureLens — Built with 4 AI Agents · Anthropic Claude · ChromaDB
+  </div>
+</footer>
+
+<script>
+  let currentVideoId = null;
+  let currentMaterials = null;
+  let currentLanguage = "English";
+
+  function renderMarkdown(text) {
+    if (!text) return '';
+    return text
+      .replace(/### (.*?)(\n|$)/g, '<strong style="font-size:15px; color: var(--text);">$1</strong><br>')
+      .replace(/## (.*?)(\n|$)/g, '<strong style="font-size:16px; color: var(--text);">$1</strong><br>')
+      .replace(/# (.*?)(\n|$)/g, '<strong style="font-size:17px; color: var(--text);">$1</strong><br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code style="background: var(--bg3); padding: 1px 4px; border-radius: 3px; font-size: 13px;">$1</code>')
+      .replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">')
+      .replace(/\n/g, '<br>');
+  }
+
+  let currentMode = 'student';
+
+  function setMode(mode) {
+    currentMode = mode;
+    const studentBtn = document.getElementById('studentModeBtn');
+    const facultyBtn = document.getElementById('facultyModeBtn');
+    const heroTitle = document.getElementById('heroTitle');
+    const heroSub = document.getElementById('heroSub');
+    const submitBtn = document.getElementById('submitBtn');
+    const langRow = document.getElementById('langRow');
+
+    if (mode === 'student') {
+      studentBtn.style.background = 'var(--accent)';
+      studentBtn.style.color = 'white';
+      studentBtn.style.borderColor = 'var(--accent)';
+      facultyBtn.style.background = 'transparent';
+      facultyBtn.style.color = 'var(--text-muted)';
+      facultyBtn.style.borderColor = 'var(--border-bright)';
+      heroTitle.innerHTML = 'Every lecture,<br><span>fully unlocked.</span>';
+      heroSub.textContent = 'Paste any YouTube lecture URL. Get a complete study environment — outline, summaries, flashcards, and semantic search — in seconds.';
+      submitBtn.textContent = 'Analyze Lecture →';
+      if (langRow) langRow.style.display = 'flex';
+      document.getElementById('featurePills').innerHTML = `
+        <div class="feature-pill"><span class="dot"></span> Timestamped Outline</div>
+        <div class="feature-pill"><span class="dot"></span> Smart Summaries</div>
+        <div class="feature-pill"><span class="dot"></span> Flashcards</div>
+        <div class="feature-pill"><span class="dot"></span> Semantic Search</div>
+        <div class="feature-pill"><span class="dot"></span> 10 Languages</div>
+      `;
+    } else {
+      facultyBtn.style.background = 'var(--accent2)';
+      facultyBtn.style.color = 'white';
+      facultyBtn.style.borderColor = 'var(--accent2)';
+      studentBtn.style.background = 'transparent';
+      studentBtn.style.color = 'var(--text-muted)';
+      studentBtn.style.borderColor = 'var(--border-bright)';
+      heroTitle.innerHTML = 'Improve your<br><span>lecture.</span>';
+      heroSub.textContent = 'Paste your YouTube lecture URL. Get a private pedagogical audit — what\'s working, what to fix, and specific timestamped rewrites.';
+      submitBtn.textContent = 'Audit Lecture →';
+      if (langRow) langRow.style.display = 'none';
+      document.getElementById('featurePills').innerHTML = `
+        <div class="feature-pill"><span class="dot" style="background: var(--accent2);"></span> Pedagogical Audit</div>
+        <div class="feature-pill"><span class="dot" style="background: var(--accent2);"></span> Accessibility Review</div>
+        <div class="feature-pill"><span class="dot" style="background: var(--accent2);"></span> Equity & Inclusion</div>
+        <div class="feature-pill"><span class="dot" style="background: var(--accent2);"></span> Clarity Feedback</div>
+        <div class="feature-pill"><span class="dot" style="background: var(--accent2);"></span> Timestamped Rewrites</div>
+      `;
+    }
+  }
+
+  function handleSubmit() {
+    if (currentMode === 'faculty') {
+      processFaculty();
+    } else {
+      processVideo();
+    }
+  }
+
+  async function processFaculty() {
+    const url = document.getElementById('urlInput').value.trim();
+    const errorEl = document.getElementById('url-error');
+
+    if (!url) {
+      errorEl.textContent = '⚠️ Please paste a YouTube lecture URL before auditing.';
+      errorEl.style.display = 'block';
+      document.getElementById('urlInput').focus();
+      return;
+    }
+
+    const isYouTube = url.includes('youtube.com/watch') ||
+                      url.includes('youtu.be/') ||
+                      url.includes('youtube.com/embed') ||
+                      url.includes('m.youtube.com/watch') ||
+                      url.includes('youtube.com/live') ||
+                      url.includes('youtube.com/shorts');
+
+    if (!isYouTube) {
+      errorEl.textContent = '⚠️ That doesn\'t look like a YouTube URL.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    errorEl.style.display = 'none';
+    showFacultyLoading();
+
+    try {
+      const eventSource = new EventSource(`/api/faculty?url=${encodeURIComponent(url)}`);
+
+      eventSource.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+
+        if (data.event === 'agent_start') {
+          if (data.agent === 1) setStepActive(1);
+          if (data.agent === 'faculty') setStepActive('faculty');
+        }
+
+        else if (data.event === 'agent_done') {
+          if (data.agent === 1) { setStepDone(1); document.getElementById('progressBar').style.width = '40%'; }
+          if (data.agent === 'faculty') { setStepDone('faculty'); document.getElementById('progressBar').style.width = '95%'; }
+        }
+
+        else if (data.event === 'error') {
+          eventSource.close();
+          showError(data.error);
+        }
+
+        else if (data.event === 'faculty_complete') {
+          eventSource.close();
+          renderFacultyReport(data);
+        }
+      };
+
+      eventSource.onerror = function() {
+        eventSource.close();
+        showError('Connection lost. Please try again.');
+      };
+
+    } catch (err) {
+      showError('Network error. Please try again.');
+    }
+  }
+
+  function showFacultyLoading() {
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('urlInput').disabled = true;
+
+    // Show only relevant steps for faculty
+    document.getElementById('step-1').style.display = 'flex';
+    document.getElementById('step-2').style.display = 'none';
+    document.getElementById('step-3').style.display = 'none';
+    document.getElementById('step-4').style.display = 'none';
+
+    // Show faculty step
+    const facultyStep = document.getElementById('step-faculty');
+    if (facultyStep) facultyStep.style.display = 'flex';
+
+    document.getElementById('progressBar').style.width = '0%';
+    currentLanguage = 'English';
+    document.querySelector('.loading-title').textContent = 'Auditing your lecture…';
+    document.querySelector('.loading-sub').textContent = '2 agents working on your private report';
+  }
+
+  function setStepDone(agentNum) {
+    const el = document.getElementById(`step-${agentNum}`);
+    if (!el) return;
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.step-status').textContent = 'Done ✓';
+  }
+
+  function renderFacultyReport(data) {
+    document.getElementById('progressBar').style.width = '100%';
+
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('faculty-report').style.display = 'block';
+
+      // Hide student sections
+      document.getElementById('videoEmbed').style.display = 'none';
+      document.getElementById('section-outline').style.display = 'none';
+      document.getElementById('section-summary').style.display = 'none';
+      document.getElementById('section-flashcards').style.display = 'none';
+      document.getElementById('section-search').style.display = 'none';
+      document.getElementById('analyzedUrl').innerHTML = `🔗 <span style="color: var(--accent);">${document.getElementById('urlInput').value.trim()}</span>`;
+      document.querySelectorAll('.divider').forEach(d => d.style.display = 'none');
+
+      // Hide translate row
+      document.querySelector('.translate-row').style.display = 'none';
+
+      // Update header
+      document.querySelector('.results-title').textContent = 'Faculty Audit Report';
+      document.getElementById('chunkCount').textContent = data.total_chunks;
+
+      // Update button names for faculty mode
+      document.querySelector('.results-meta a').textContent = '← Audit another';
+      document.getElementById('studentBottomBtn').style.display = 'none';
+
+      // Fill overall score
+      const scoreText = data.overall_score || '';
+      const scoreLetter = scoreText.match(/[ABCD]/)?.[0] || '—';
+      document.getElementById('overallScore').textContent = scoreLetter;
+      document.getElementById('overallText').textContent = scoreText.replace(/^[ABCD]\s*[-—]\s*/,'');
+
+      // Fill top priority
+      document.getElementById('priorityText').innerHTML = renderMarkdown(data.top_priority || '');
+
+      // Fill dimensions
+      ['pedagogical', 'accessibility', 'equity', 'clarity'].forEach(dim => {
+        const d = data[dim] || {};
+        const scoreLetter = (d.score || '').match(/[ABCD]/)?.[0] || '—';
+        document.getElementById(`score-${dim}`).textContent = scoreLetter;
+        document.getElementById(`strengths-${dim}`).innerHTML = renderMarkdown(d.strengths || '');
+        document.getElementById(`issues-${dim}`).innerHTML = renderMarkdown(d.issues || '');
+        document.getElementById(`suggestion-${dim}`).innerHTML = renderMarkdown(d.suggestion || '');
+      });
+
+      // Fill rewrite examples
+      document.getElementById('rewriteExamples').innerHTML = renderMarkdown(data.rewrite_examples || '');
+
+    }, 400);
+  }
+
+  function downloadReport() {
+    const printStyles = `
+      <style>
+        body { background: white; color: black; font-family: Arial, sans-serif; }
+        .faculty-card { border: 1px solid #ddd; padding: 16px; margin-bottom: 16px; border-radius: 8px; }
+        .faculty-card-header { border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .faculty-card-title { font-weight: bold; font-size: 16px; flex: 1; }
+        .faculty-score { font-weight: bold; font-size: 18px; background: #f0f4ff; padding: 4px 8px; border-radius: 4px; }
+        .faculty-label { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+        .faculty-label.success { color: #16a34a; }
+        .faculty-label.warning { color: #d97706; }
+        .faculty-label.accent { color: #2563eb; }
+        .faculty-text { font-size: 13px; color: #444; margin-bottom: 8px; }
+        .priority-box { background: #fff5f5; border: 1px solid #fecaca; padding: 16px; border-radius: 8px; margin-bottom: 24px; }
+        .overall-score { font-size: 48px; font-weight: bold; color: #2563eb; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        h2 { font-size: 16px; color: #666; margin-bottom: 24px; }
+        .privacy { text-align: center; color: #999; font-size: 12px; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media print { .no-print { display: none; } }
+      </style>
+    `;
+
+    const reportContent = document.getElementById('faculty-report').innerHTML;
+    const overall = document.getElementById('overallScore').textContent;
+    const priority = document.getElementById('priorityText').textContent;
+    const auditedUrl = document.getElementById('analyzedUrl').textContent;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>LectureLens Faculty Audit Report</title>
+        ${printStyles}
+      </head>
+      <body>
+        <h1>LectureLens — Faculty Audit Report</h1>
+        <h2>Private & Confidential — For Faculty Use Only</h2>
+        <div style="font-size: 12px; color: #666; margin-bottom: 24px;">🔗 <span style="color: #2563eb;">${auditedUrl}</span></div>
+        <div class="priority-box">
+          <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #dc2626; margin-bottom: 8px;">🎯 TOP PRIORITY — Fix This First</div>
+          <div>${priority}</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+          <div class="overall-score">${overall}</div>
+          <div>
+            <div style="font-size: 18px; font-weight: bold;">Overall Lecture Grade</div>
+            <div style="color: #666;">${document.getElementById('overallText').textContent}</div>
+          </div>
+        </div>
+        <div class="grid">
+          ${['pedagogical', 'accessibility', 'equity', 'clarity'].map(dim => `
+            <div class="faculty-card">
+              <div class="faculty-card-header">
+                <span class="faculty-card-title">${dim.charAt(0).toUpperCase() + dim.slice(1)}</span>
+                <span class="faculty-score">${document.getElementById('score-' + dim).textContent}</span>
+              </div>
+              <div class="faculty-label success">✓ Strengths</div>
+              <div class="faculty-text">${document.getElementById('strengths-' + dim).textContent}</div>
+              <div class="faculty-label warning">⚠ Issues</div>
+              <div class="faculty-text">${document.getElementById('issues-' + dim).textContent}</div>
+              <div class="faculty-label accent">→ Suggestion</div>
+              <div class="faculty-text">${document.getElementById('suggestion-' + dim).textContent}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top: 24px;">
+          <div style="font-weight: bold; margin-bottom: 8px;">✏️ Suggested Rewrites</div>
+          <div style="font-size: 13px; color: #444;">${document.getElementById('rewriteExamples').textContent}</div>
+        </div>
+        <div class="privacy">🔒 This report is private. Nothing was stored on LectureLens servers.</div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
+
+  // ── PROCESS VIDEO ──
+  async function processVideo() {
+    const url = document.getElementById('urlInput').value.trim();
+    const errorEl = document.getElementById('url-error');
+
+    if (!url) {
+      errorEl.textContent = '⚠️ Please paste a YouTube lecture URL before analyzing.';
+      errorEl.style.display = 'block';
+      document.getElementById('urlInput').focus();
+      return;
+    }
+
+    const isYouTube = url.includes('youtube.com/watch') ||
+                      url.includes('youtu.be/') ||
+                      url.includes('youtube.com/embed') ||
+                      url.includes('m.youtube.com/watch') ||
+                      url.includes('youtube.com/live') ||
+                      url.includes('youtube.com/shorts');
+
+    if (!isYouTube) {
+      errorEl.textContent = '⚠️ That doesn\'t look like a YouTube URL. Please paste a valid YouTube lecture link.';
+      errorEl.style.display = 'block';
+      document.getElementById('urlInput').focus();
+      return;
+    }
+
+    const selectedLang = document.getElementById('heroLangSelect').value;
+    currentLanguage = selectedLang;
+
+    errorEl.style.display = 'none';
+    showLoading();
+
+    try {
+      const eventSource = new EventSource(`/api/process?url=${encodeURIComponent(url)}&language=${encodeURIComponent(selectedLang)}`);
+
+      eventSource.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+
+        if (data.event === 'agent_start') {
+          setStepActive(data.agent);
+        }
+
+        else if (data.event === 'agent_done') {
+          setStepDone(data.agent, data.message);
+          updateProgress(data.agent);
+        }
+        
+        else if (data.event === 'warning') {
+            const banner = document.createElement('div');
+            banner.style.cssText = 'background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; font-size: 12px; padding: 8px 14px; border-radius: 6px; margin-top: 16px; text-align: center;';
+            banner.textContent = '⚠️ ' + data.message;
+            document.querySelector('.loading-inner').appendChild(banner);
+        }
+
+        else if (data.event === 'error') {
+          eventSource.close();
+          showError(data.error);
+        }
+
+        else if (data.event === 'complete') {
+          eventSource.close();
+          currentVideoId = data.video_id;
+          currentMaterials = {
+            outline: data.outline,
+            summary_90: data.summary_90,
+            summary_5min: data.summary_5min,
+            flashcards: data.flashcards
+          };
+          renderResults(data);
+        }
+      };
+
+      eventSource.onerror = function() {
+        eventSource.close();
+        showError('Connection lost. Please try again.');
+      };
+
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    }
+  }
+
+  // ── ANIMATE LOADING STEPS ──
+  function setStepActive(agentNum) {
+    const el = document.getElementById(`step-${agentNum}`);
+    if (!el) return;
+    el.classList.add('active');
+    el.querySelector('.step-status').textContent = 'Running…';
+  }
+
+  function setStepDone(agentNum, message) {
+    const el = document.getElementById(`step-${agentNum}`);
+    if (!el) return;
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.step-status').textContent = 'Done ✓';
+  }
+
+  function updateProgress(agentNum) {
+    const progressMap = { 1: '33%', 2: '75%', 3: '95%' };
+    document.getElementById('progressBar').style.width = progressMap[agentNum] || '95%';
+  }
+
+  // ── RENDER RESULTS ──
+  function renderResults(data) {
+    document.getElementById('chunkCount').textContent = data.total_chunks;
+
+    // Video embed
+    document.getElementById('videoEmbed').innerHTML =
+      `<iframe src="https://www.youtube.com/embed/${data.video_id}" allowfullscreen></iframe>`;
+
+    // Outline
+    renderOutline(data.outline);
+
+    // Summaries
+    document.getElementById('summary-90').innerHTML = renderMarkdown(data.summary_90 || 'Summary not available.');
+    document.getElementById('summary-5min').innerHTML = renderMarkdown(data.summary_5min || 'Summary not available.');
+    document.getElementById('analyzedUrl').innerHTML = `🔗 <span style="color: var(--accent);">${document.getElementById('urlInput').value.trim()}</span>`;
+
+    // Flashcards
+    renderFlashcards(data.flashcards);
+
+    showResults();
+  }
+
+  // ── RENDER OUTLINE ──
+  function renderOutline(outlineText) {
+    const container = document.getElementById('outlineContent');
+    container.innerHTML = '';
+
+    if (!outlineText) {
+      container.innerHTML = '<div class="outline-item"><div class="outline-text">Outline not available.</div></div>';
+      return;
+    }
+
+    const lines = outlineText.split('\n').filter(l => l.trim());
+    lines.forEach(line => {
+      const tsMatch = line.match(/\[(\d{2}:\d{2})\]/);
+      const ts = tsMatch ? tsMatch[1] : null;
+      const text = line.replace(/\[[\d:]+\]/, '').replace(/^[-•*]\s*/, '').trim();
+      const isMain = !line.startsWith('  ');
+
+      if (!text) return;
+
+      const item = document.createElement('div');
+      item.className = 'outline-item';
+
+      if (ts && currentVideoId) {
+        const secs = tsToSeconds(ts);
+        item.style.cursor = 'pointer';
+        item.onclick = () => jumpToTime(secs);
+      }
+
+      item.innerHTML = `
+        ${ts ? `<div class="outline-ts">${ts}</div>` : ''}
+        <div>
+          <div class="outline-text" style="${!isMain ? 'color: var(--text-muted); font-size: 13px;' : ''}">${text}</div>
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  }
+
+  // ── RENDER FLASHCARDS ──
+  function renderFlashcards(flashcards) {
+    const grid = document.getElementById('flashcardsGrid');
+    grid.innerHTML = '';
+
+    if (!flashcards || !flashcards.length) {
+      grid.innerHTML = '<p style="color: var(--text-muted); font-size: 14px;">No flashcards generated.</p>';
+      return;
+    }
+
+    flashcards.forEach((card, i) => {
+      const el = document.createElement('div');
+      el.className = 'flashcard';
+      el.onclick = () => el.classList.toggle('flipped');
+      el.innerHTML = `
+        <div class="card-front">
+          <div class="card-label">Question</div>
+          <div class="card-text">${card.front}</div>
+          <div class="card-footer">
+            <div class="card-ts">▶ ${card.timestamp || '—'}</div>
+            <div class="card-hint">tap to reveal</div>
+          </div>
+        </div>
+        <div class="card-back">
+          <div class="card-label">Answer</div>
+          <div class="card-text">${card.back}</div>
+          <div class="card-footer">
+            <div class="card-ts">▶ ${card.timestamp || '—'}</div>
+            <div class="card-hint">tap to flip back</div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(el);
+    });
+  }
+
+  // ── SEARCH ──
+  async function searchLecture() {
+    const question = document.getElementById('searchInput').value.trim();
+    
+    if (!question) {
+      const input = document.getElementById('searchInput');
+      input.placeholder = '⚠️ Please type a question first…';
+      input.style.color = '#f87171';
+      setTimeout(() => {
+        input.placeholder = 'What did the lecturer say about…';
+        input.style.color = '';
+      }, 3000);
+      return;
+    }
+    
+    if (!currentVideoId) return;
+
+    const btn = document.getElementById('searchBtn');
+    const indicator = document.getElementById('searchingIndicator');
+    const result = document.getElementById('searchResult');
+
+    btn.disabled = true;
+    indicator.classList.add('visible');
+    result.classList.remove('visible');
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, video_id: currentVideoId, language: currentLanguage })
+      });
+
+      const data = await res.json();
+
+      document.getElementById('searchAnswer').innerHTML =
+        data.success ? renderMarkdown(data.answer) : (data.error || 'No answer found.');
+
+      const tsContainer = document.getElementById('searchTimestamps');
+      tsContainer.innerHTML = '';
+
+      if (data.success && data.timestamps && data.timestamps.length) {
+        tsContainer.innerHTML = '<span class="ts-label">Jump to:</span>';
+        data.timestamps.forEach(ts => {
+          const chip = document.createElement('a');
+          chip.className = 'ts-chip';
+          chip.textContent = ts;
+          chip.href = '#';
+          chip.onclick = (e) => {
+            e.preventDefault();
+            jumpToTime(tsToSeconds(ts));
+          };
+          tsContainer.appendChild(chip);
+        });
+      }
+
+      result.classList.add('visible');
+
+    } catch (err) {
+      document.getElementById('searchAnswer').textContent = 'Search failed. Please try again.';
+      result.classList.add('visible');
+    } finally {
+      btn.disabled = false;
+      indicator.classList.remove('visible');
+    }
+  }
+
+  // ── TRANSLATE ──
+  async function translateContent() {
+    const lang = document.getElementById('langSelect').value;
+    currentLanguage = lang;
+    if (!lang || !currentMaterials) {
+      document.getElementById('langSelect').focus();
+      return;
+    }
+
+    const btn = document.getElementById('translateBtn');
+    btn.innerHTML = '<div class="spinner"></div><span>Translating…</span>';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ study_materials: currentMaterials, language: lang })
+      });
+
+      const data = await res.json();
+
+      console.log('Translation response:', data);
+
+      if (data.success) {
+        renderOutline(data.outline);
+        document.getElementById('summary-90').innerHTML = renderMarkdown(data.summary_90);
+        document.getElementById('summary-5min').innerHTML = renderMarkdown(data.summary_5min);
+        renderFlashcards(data.flashcards);
+        currentMaterials = {
+          outline: data.outline,
+          summary_90: data.summary_90,
+          summary_5min: data.summary_5min,
+          flashcards: data.flashcards
+        };
+
+        // Force active summary tab to refresh
+        document.querySelectorAll('.summary-content').forEach(c => c.classList.remove('active'));
+        const activeTab = document.querySelector('.summary-tab.active');
+        if (activeTab) {
+          const type = activeTab.textContent.includes('90') ? '90' : '5min';
+          document.getElementById('summary-' + type).classList.add('active');
+        }
+
+        // Translate existing search answer if visible
+        const searchResult = document.getElementById('searchResult');
+        const searchAnswer = document.getElementById('searchAnswer');
+        if (searchResult.classList.contains('visible') && searchAnswer.textContent.trim()) {
+          fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: document.getElementById('searchInput').value.trim(),
+              video_id: currentVideoId,
+              language: lang
+            })
+          })
+          .then(r => r.json())
+          .then(d => {
+            if (d.success) {
+              searchAnswer.innerHTML = renderMarkdown(d.answer);
+            }
+          });
+        }
+      } else {
+        alert('Translation failed: ' + (data.error || 'Unknown error'));
+      }
+
+    } catch (err) {
+      console.error('Translation error:', err);
+      alert('Translation failed. Please try again.');
+    } finally {
+      btn.innerHTML = '<span>Translate</span>';
+      btn.disabled = false;
+    }
+  }
+
+  // ── SUMMARY TABS ──
+  function showSummary(type) {
+    document.querySelectorAll('.summary-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.summary-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('summary-' + type).classList.add('active');
+  }
+
+  // ── JUMP TO TIME ──
+  function jumpToTime(seconds) {
+    const iframe = document.querySelector('#videoEmbed iframe');
+    if (!iframe) return;
+    iframe.src = `https://www.youtube.com/embed/${currentVideoId}?start=${Math.floor(seconds)}&autoplay=1`;
+    document.getElementById('videoEmbed').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function tsToSeconds(ts) {
+    const parts = ts.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+
+  // ── STATE TRANSITIONS ──
+  function showLoading() {
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('urlInput').disabled = true;
+    document.querySelector('.loading-title').textContent = 'Analyzing your lecture…';
+    document.querySelector('.loading-sub').textContent = '4 agents are working in parallel';
+  }
+
+  function showResults() {
+    document.getElementById('progressBar').style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+    }, 400);
+
+    // Staggered reveal
+    const sections = document.querySelectorAll('.section');
+    sections.forEach((s, i) => {
+      setTimeout(() => s.classList.add('visible'), i * 120);
+    });
+  }
+
+  function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-state').style.display = 'block';
+    document.getElementById('errorMsg').textContent = msg;
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('urlInput').disabled = false;
+  }
+
+  function resetToHome() {
+    document.getElementById('analyzedUrl').textContent = '';
+    document.getElementById('hero').style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('urlInput').value = '';
+    document.getElementById('urlInput').disabled = false;
+    document.getElementById('progressBar').style.width = '0%';
+    document.querySelectorAll('.agent-step').forEach(s => {
+      s.classList.remove('active', 'done');
+      s.querySelector('.step-status').textContent = 'Waiting';
+    });
+    currentVideoId = null;
+    currentMaterials = null;
+    currentLanguage = "English";
+    document.getElementById('langSelect').value = '';
+    document.getElementById('heroLangSelect').value = 'English';
+
+    // Reset faculty report
+    document.getElementById('faculty-report').style.display = 'none';
+    document.getElementById('videoEmbed').style.display = 'block';
+    document.getElementById('section-outline').style.display = 'block';
+    document.getElementById('section-summary').style.display = 'block';
+    document.getElementById('section-flashcards').style.display = 'block';
+    document.getElementById('section-search').style.display = 'block';
+    document.querySelectorAll('.divider').forEach(d => d.style.display = 'block');
+    document.querySelector('.translate-row').style.display = 'flex';
+    document.querySelector('.results-title').textContent = 'Study Environment Ready';
+    // Restore button names for student mode
+    document.querySelector('.results-meta a').textContent = '← Analyze another';
+    document.getElementById('studentBottomBtn').style.display = 'block';
+
+    // Reset loading steps visibility
+    document.getElementById('step-2').style.display = 'flex';
+    document.getElementById('step-3').style.display = 'flex';
+    document.getElementById('step-4').style.display = 'flex';
+    document.getElementById('step-faculty').style.display = 'none';
+
+    // Reset to whichever mode the user came from
+    setMode(currentMode);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Enter key on URL input
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSubmit();
+  });
+</script>
+
+</body>
+</html>

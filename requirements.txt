@@ -4,4 +4,4 @@ anthropic
 python-dotenv
 youtube-transcript-api
 chromadb
-yt-dlp
+yt-dlp>=2025.3.31

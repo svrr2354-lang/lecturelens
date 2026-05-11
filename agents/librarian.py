@@ -30,7 +30,6 @@ def fetch_transcript(url: str) -> dict:
         return {"success": False, "error": "YouTube Shorts are not supported. Please use a regular lecture video."}
 
     try:
-        # Use yt-dlp to get transcript
         cmd = [
             "yt-dlp",
             "--write-auto-sub",
@@ -40,34 +39,36 @@ def fetch_transcript(url: str) -> dict:
             "--output", f"/tmp/{video_id}",
             f"https://www.youtube.com/watch?v={video_id}"
         ]
-        
+
+        proxy = os.getenv("PROXY_URL", "")
+        if proxy:
+            cmd.insert(-1, "--proxy")
+            cmd.insert(-1, proxy)
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        
+
         # Look for the subtitle file
         import glob
         sub_files = glob.glob(f"/tmp/{video_id}*.json3")
-        
+
         if not sub_files:
             # Try vtt format as fallback
             cmd[4] = "vtt"
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
             sub_files = glob.glob(f"/tmp/{video_id}*.vtt")
-            
+
             if not sub_files:
                 return {"success": False, "error": "No captions available for this video."}
-            
-            # Parse VTT
+
             chunks = parse_vtt(sub_files[0])
         else:
-            # Parse JSON3
             chunks = parse_json3(sub_files[0])
 
         if not chunks:
             return {"success": False, "error": "Could not parse transcript."}
 
         full_text = " ".join([c["text"] for c in chunks])
-        
-        # Detect auto-generated
+
         punctuation_count = sum(1 for c in full_text if c in '.!?,;:')
         auto_generated = punctuation_count < 3
 
@@ -91,7 +92,7 @@ def parse_json3(filepath: str) -> list:
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
+
         chunks = []
         for event in data.get("events", []):
             if "segs" not in event:
@@ -111,16 +112,15 @@ def parse_vtt(filepath: str) -> list:
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         chunks = []
         blocks = content.strip().split('\n\n')
-        
+
         for block in blocks:
             lines = block.strip().split('\n')
             if len(lines) < 2:
                 continue
-            
-            # Find timestamp line
+
             ts_line = None
             text_lines = []
             for line in lines:
@@ -128,17 +128,15 @@ def parse_vtt(filepath: str) -> list:
                     ts_line = line
                 elif ts_line and line.strip() and not line.strip().isdigit():
                     text_lines.append(line.strip())
-            
+
             if ts_line and text_lines:
-                # Parse start time
                 start_str = ts_line.split('-->')[0].strip()
                 start = parse_timestamp(start_str)
                 text = ' '.join(text_lines)
-                # Remove HTML tags
                 text = re.sub(r'<[^>]+>', '', text).strip()
                 if text:
                     chunks.append({"text": text, "start": start, "duration": 5})
-        
+
         return chunks
     except:
         return []

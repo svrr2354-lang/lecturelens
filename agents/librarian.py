@@ -30,6 +30,8 @@ def fetch_transcript(url: str) -> dict:
         return {"success": False, "error": "YouTube Shorts are not supported. Please use a regular lecture video."}
 
     try:
+        proxy = os.getenv("PROXY_URL", "")
+
         cmd = [
             "yt-dlp",
             "--write-auto-sub",
@@ -40,14 +42,30 @@ def fetch_transcript(url: str) -> dict:
             f"https://www.youtube.com/watch?v={video_id}"
         ]
 
+        if proxy:
+            cmd.insert(-1, "--proxy")
+            cmd.insert(-1, proxy)
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
         import glob
         sub_files = glob.glob(f"/tmp/{video_id}*.json3")
 
         if not sub_files:
-            cmd[4] = "vtt"
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            cmd_vtt = [
+                "yt-dlp",
+                "--write-auto-sub",
+                "--sub-lang", "en",
+                "--skip-download",
+                "--sub-format", "vtt",
+                "--output", f"/tmp/{video_id}",
+                f"https://www.youtube.com/watch?v={video_id}"
+            ]
+            if proxy:
+                cmd_vtt.insert(-1, "--proxy")
+                cmd_vtt.insert(-1, proxy)
+
+            result = subprocess.run(cmd_vtt, capture_output=True, text=True, timeout=60)
             sub_files = glob.glob(f"/tmp/{video_id}*.vtt")
 
             if not sub_files:

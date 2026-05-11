@@ -25,32 +25,60 @@ def fetch_transcript(url: str) -> dict:
     if 'shorts' in url.lower():
         return {"success": False, "error": "YouTube Shorts are not supported. Please use a regular lecture video."}
     try:
+        proxy = os.getenv("PROXY_URL", "")
+
         cmd = [
             "yt-dlp",
             "--write-auto-sub",
             "--sub-lang", "en",
             "--skip-download",
             "--sub-format", "json3",
+            "--no-check-certificate",
             "--output", f"/tmp/{video_id}",
             f"https://www.youtube.com/watch?v={video_id}"
         ]
+
+        if proxy:
+            cmd.insert(-1, "--proxy")
+            cmd.insert(-1, proxy)
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
         import glob
         sub_files = glob.glob(f"/tmp/{video_id}*.json3")
+
         if not sub_files:
-            cmd[4] = "vtt"
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            cmd_vtt = [
+                "yt-dlp",
+                "--write-auto-sub",
+                "--sub-lang", "en",
+                "--skip-download",
+                "--sub-format", "vtt",
+                "--no-check-certificate",
+                "--output", f"/tmp/{video_id}",
+                f"https://www.youtube.com/watch?v={video_id}"
+            ]
+            if proxy:
+                cmd_vtt.insert(-1, "--proxy")
+                cmd_vtt.insert(-1, proxy)
+
+            result = subprocess.run(cmd_vtt, capture_output=True, text=True, timeout=60)
             sub_files = glob.glob(f"/tmp/{video_id}*.vtt")
+
             if not sub_files:
                 return {"success": False, "error": "No captions available for this video."}
+
             chunks = parse_vtt(sub_files[0])
         else:
             chunks = parse_json3(sub_files[0])
+
         if not chunks:
             return {"success": False, "error": "Could not parse transcript."}
+
         full_text = " ".join([c["text"] for c in chunks])
         punctuation_count = sum(1 for c in full_text if c in '.!?,;:')
         auto_generated = punctuation_count < 3
+
         return {
             "success": True,
             "video_id": video_id,
@@ -59,10 +87,12 @@ def fetch_transcript(url: str) -> dict:
             "total_chunks": len(chunks),
             "auto_generated_captions": auto_generated
         }
+
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Request timed out. Please try again."}
     except Exception as e:
         return {"success": False, "error": f"Could not fetch transcript: {str(e)}"}
+
 
 def parse_json3(filepath: str) -> list:
     try:
@@ -80,6 +110,7 @@ def parse_json3(filepath: str) -> list:
         return chunks
     except:
         return []
+
 
 def parse_vtt(filepath: str) -> list:
     try:
@@ -108,6 +139,7 @@ def parse_vtt(filepath: str) -> list:
         return chunks
     except:
         return []
+
 
 def parse_timestamp(ts: str) -> float:
     try:

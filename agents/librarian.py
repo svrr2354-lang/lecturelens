@@ -43,6 +43,10 @@ def fetch_transcript(url: str) -> dict:
             cmd.insert(-1, proxy)
 
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        print(f"STDOUT: {result.stdout[:500]}")
+        print(f"STDERR: {result.stderr[:500]}")
+        print(f"RETURNCODE: {result.returncode}")
+        print(f"PROXY: {proxy[:50] if proxy else 'none'}")
 
         import glob
         sub_files = glob.glob(f"/tmp/{video_id}*.json3")

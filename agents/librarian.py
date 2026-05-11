@@ -46,6 +46,9 @@ def fetch_transcript(url: str) -> dict:
             cmd.insert(-1, proxy)
 
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        print(f"yt-dlp stdout: {result.stdout}")
+        print(f"yt-dlp stderr: {result.stderr}")
+        print(f"yt-dlp returncode: {result.returncode}")
 
         # Look for the subtitle file
         import glob
@@ -55,6 +58,9 @@ def fetch_transcript(url: str) -> dict:
             # Try vtt format as fallback
             cmd[4] = "vtt"
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            print(f"yt-dlp vtt stdout: {result.stdout}")
+            print(f"yt-dlp vtt stderr: {result.stderr}")
+            print(f"yt-dlp vtt returncode: {result.returncode}")
             sub_files = glob.glob(f"/tmp/{video_id}*.vtt")
 
             if not sub_files:
